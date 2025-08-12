@@ -219,6 +219,7 @@
   </div>
 </div>
 
+<!-- inside your <script> -->
 <script>
   const filesEl = document.getElementById('files');
   const thumbs = document.getElementById('thumbs');
@@ -233,6 +234,15 @@
   const resetBtn = document.getElementById('reset');
 
   let images = [];
+
+  // Auto-set output width for smaller devices
+  if (window.innerWidth <= 480) {
+    outWEl.value = 900; // smaller for phones
+  } else if (window.innerWidth <= 1024) {
+    outWEl.value = 1400; // tablets
+  } else {
+    outWEl.value = 1600; // desktops
+  }
 
   filesEl.addEventListener('change', async (e) => {
     images = [];
@@ -306,7 +316,7 @@
       }
     }
 
-    const dataURL = canvas.toDataURL('image/jpeg', 0.95);
+    const dataURL = canvas.toDataURL('image/jpeg', 0.9); // slightly smaller file size
     downloadBtn.style.display = 'inline-block';
     resetBtn.style.display = 'inline-block';
     downloadBtn.onclick = () => {
