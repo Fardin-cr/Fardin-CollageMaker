@@ -8,7 +8,7 @@
 <style>
   body {
     margin: 0;
-    padding: 30px;
+    padding: 20px;
     font-family: 'Poppins', sans-serif;
     background: linear-gradient(135deg, #667eea, #764ba2);
     min-height: 100vh;
@@ -49,6 +49,8 @@
   label {
     font-size: 14px;
     font-weight: 500;
+    display: block;
+    margin-bottom: 4px;
   }
 
   input[type=file], input[type=number], input[type=color] {
@@ -57,9 +59,8 @@
     padding: 8px;
     border-radius: 8px;
     color: white;
-  }
-  input[type=number]::-webkit-inner-spin-button {
-    opacity: 0.5;
+    width: 100%;
+    box-sizing: border-box;
   }
 
   button {
@@ -71,14 +72,14 @@
     font-weight: 500;
     cursor: pointer;
     transition: transform 0.2s ease, box-shadow 0.2s ease;
+    width: 100%;
   }
+
   button:hover {
     transform: translateY(-2px);
     box-shadow: 0 6px 20px rgba(0,0,0,0.25);
   }
-  button:active {
-    transform: translateY(0);
-  }
+
   .danger-btn {
     background: linear-gradient(135deg, #ff416c, #ff4b2b);
   }
@@ -88,21 +89,27 @@
     gap: 20px;
     align-items: flex-start;
     margin-top: 16px;
+    flex-wrap: wrap;
   }
 
   canvas {
     background: white;
     border-radius: 12px;
     box-shadow: 0 4px 18px rgba(0,0,0,0.2);
+    max-width: 100%;
+    height: auto;
   }
 
   .side {
-    min-width: 220px;
+    min-width: 200px;
+    flex: 1;
   }
+
   .small {
     font-size: 13px;
     color: rgba(255,255,255,0.8);
   }
+
   .hint {
     font-size: 12px;
     color: rgba(255,255,255,0.6);
@@ -113,6 +120,7 @@
     flex-wrap: wrap;
     gap: 8px;
     margin-top: 8px;
+    overflow-x: auto;
   }
 
   .thumb {
@@ -122,7 +130,9 @@
     border-radius: 10px;
     border: 2px solid rgba(255,255,255,0.3);
     transition: transform 0.25s ease;
+    flex-shrink: 0;
   }
+
   .thumb:hover {
     transform: scale(1.08);
   }
@@ -132,6 +142,26 @@
     font-size: 12px;
     color: rgba(255,255,255,0.7);
   }
+
+  /* Responsive tweaks */
+  @media (max-width: 768px) {
+    .controls {
+      flex-direction: column;
+    }
+    button {
+      width: 100%;
+    }
+    #canvasWrap {
+      flex-direction: column;
+    }
+    .side {
+      order: 2;
+      width: 100%;
+    }
+    canvas {
+      order: 1;
+    }
+  }
 </style>
 </head>
 <body>
@@ -140,27 +170,27 @@
   <p class="lead">Upload up to 15 images, choose layout settings, and create a stunning JPG collage.</p>
   
   <div class="controls">
-    <div>
-      <label>Choose images</label><br>
+    <div style="flex:1;min-width:150px">
+      <label>Choose images</label>
       <input id="files" type="file" accept="image/*" multiple />
     </div>
-    <div>
-      <label>Columns</label><br>
-      <input id="cols" type="number" min="1" max="15" value="4" style="width:86px" />
+    <div style="flex:1;min-width:100px">
+      <label>Columns</label>
+      <input id="cols" type="number" min="1" max="15" value="4" />
     </div>
-    <div>
-      <label>Cell padding (px)</label><br>
-      <input id="gap" type="number" min="0" max="100" value="6" style="width:86px" />
+    <div style="flex:1;min-width:100px">
+      <label>Cell padding (px)</label>
+      <input id="gap" type="number" min="0" max="100" value="6" />
     </div>
-    <div>
-      <label>Output width (px)</label><br>
-      <input id="outW" type="number" min="200" max="4000" value="1600" style="width:110px" />
+    <div style="flex:1;min-width:120px">
+      <label>Output width (px)</label>
+      <input id="outW" type="number" min="200" max="4000" value="1600" />
     </div>
-    <div>
-      <label>Background</label><br>
+    <div style="flex:1;min-width:100px">
+      <label>Background</label>
       <input id="bg" type="color" value="#ffffff" />
     </div>
-    <div style="display:flex;align-items:flex-end">
+    <div style="flex:1;min-width:120px;display:flex;align-items:flex-end">
       <button id="generate">Generate</button>
     </div>
   </div>
@@ -179,7 +209,7 @@
       </div>
     </div>
 
-    <div>
+    <div style="flex:2">
       <canvas id="canvas"></canvas>
     </div>
   </div>
