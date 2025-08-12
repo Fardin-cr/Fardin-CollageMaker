@@ -1,0 +1,304 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Collage Generator</title>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  body {
+    margin: 0;
+    padding: 30px;
+    font-family: 'Poppins', sans-serif;
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+  }
+
+  .card {
+    width: 100%;
+    max-width: 980px;
+    background: rgba(255, 255, 255, 0.15);
+    backdrop-filter: blur(14px);
+    border-radius: 20px;
+    padding: 24px;
+    box-shadow: 0 8px 40px rgba(0,0,0,0.15);
+    color: white;
+  }
+
+  h1 {
+    margin: 0 0 8px;
+    font-size: 26px;
+    font-weight: 600;
+  }
+
+  p.lead {
+    margin: 0 0 20px;
+    color: rgba(255,255,255,0.85);
+  }
+
+  .controls {
+    display: flex;
+    gap: 14px;
+    flex-wrap: wrap;
+    margin-bottom: 18px;
+  }
+
+  label {
+    font-size: 14px;
+    font-weight: 500;
+  }
+
+  input[type=file], input[type=number], input[type=color] {
+    background: rgba(255,255,255,0.1);
+    border: 1px solid rgba(255,255,255,0.3);
+    padding: 8px;
+    border-radius: 8px;
+    color: white;
+  }
+  input[type=number]::-webkit-inner-spin-button {
+    opacity: 0.5;
+  }
+
+  button {
+    background: linear-gradient(135deg, #00c6ff, #0072ff);
+    border: none;
+    color: white;
+    padding: 12px 18px;
+    border-radius: 10px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+  }
+  button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(0,0,0,0.25);
+  }
+  button:active {
+    transform: translateY(0);
+  }
+  .danger-btn {
+    background: linear-gradient(135deg, #ff416c, #ff4b2b);
+  }
+
+  #canvasWrap {
+    display: flex;
+    gap: 20px;
+    align-items: flex-start;
+    margin-top: 16px;
+  }
+
+  canvas {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 4px 18px rgba(0,0,0,0.2);
+  }
+
+  .side {
+    min-width: 220px;
+  }
+  .small {
+    font-size: 13px;
+    color: rgba(255,255,255,0.8);
+  }
+  .hint {
+    font-size: 12px;
+    color: rgba(255,255,255,0.6);
+  }
+
+  .previewThumbs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 8px;
+  }
+
+  .thumb {
+    width: 64px;
+    height: 64px;
+    object-fit: cover;
+    border-radius: 10px;
+    border: 2px solid rgba(255,255,255,0.3);
+    transition: transform 0.25s ease;
+  }
+  .thumb:hover {
+    transform: scale(1.08);
+  }
+
+  .footer {
+    margin-top: 14px;
+    font-size: 12px;
+    color: rgba(255,255,255,0.7);
+  }
+</style>
+</head>
+<body>
+<div class="card">
+  <h1>Collage Generator</h1>
+  <p class="lead">Upload up to 15 images, choose layout settings, and create a stunning JPG collage.</p>
+  
+  <div class="controls">
+    <div>
+      <label>Choose images</label><br>
+      <input id="files" type="file" accept="image/*" multiple />
+    </div>
+    <div>
+      <label>Columns</label><br>
+      <input id="cols" type="number" min="1" max="15" value="4" style="width:86px" />
+    </div>
+    <div>
+      <label>Cell padding (px)</label><br>
+      <input id="gap" type="number" min="0" max="100" value="6" style="width:86px" />
+    </div>
+    <div>
+      <label>Output width (px)</label><br>
+      <input id="outW" type="number" min="200" max="4000" value="1600" style="width:110px" />
+    </div>
+    <div>
+      <label>Background</label><br>
+      <input id="bg" type="color" value="#ffffff" />
+    </div>
+    <div style="display:flex;align-items:flex-end">
+      <button id="generate">Generate</button>
+    </div>
+  </div>
+
+  <div id="canvasWrap">
+    <div class="side">
+      <div class="small">Preview thumbnails</div>
+      <div id="thumbs" class="previewThumbs"></div>
+
+      <div class="small" style="margin-top:12px">Options</div>
+      <div class="hint">Empty slots will show background color.</div>
+
+      <div style="margin-top:12px; display:flex; gap:8px; flex-wrap:wrap;">
+        <button id="download" style="display:none">Download JPG</button>
+        <button id="reset" class="danger-btn" style="display:none">Reset</button>
+      </div>
+    </div>
+
+    <div>
+      <canvas id="canvas"></canvas>
+    </div>
+  </div>
+
+  <div class="footer">
+    Output is a high-quality JPEG. After downloading, you can share it anywhere.
+  </div>
+</div>
+
+<script>
+  const filesEl = document.getElementById('files');
+  const thumbs = document.getElementById('thumbs');
+  const canvas = document.getElementById('canvas');
+  const ctx = canvas.getContext('2d');
+  const colsEl = document.getElementById('cols');
+  const gapEl = document.getElementById('gap');
+  const outWEl = document.getElementById('outW');
+  const bgEl = document.getElementById('bg');
+  const generateBtn = document.getElementById('generate');
+  const downloadBtn = document.getElementById('download');
+  const resetBtn = document.getElementById('reset');
+
+  let images = [];
+
+  filesEl.addEventListener('change', async (e) => {
+    images = [];
+    thumbs.innerHTML = '';
+    const chosen = Array.from(e.target.files).slice(0, 15);
+    for (const f of chosen) {
+      const url = URL.createObjectURL(f);
+      const img = await loadImage(url);
+      images.push(img);
+      const imgEl = document.createElement('img');
+      imgEl.src = url;
+      imgEl.className = 'thumb';
+      thumbs.appendChild(imgEl);
+    }
+    drawPlaceholder();
+  });
+
+  function loadImage(src){
+    return new Promise((res, rej) => {
+      const i = new Image();
+      i.onload = () => res(i);
+      i.onerror = rej;
+      i.src = src;
+    });
+  }
+
+  function drawPlaceholder(){
+    const w = 640, h = 360;
+    canvas.width = w; canvas.height = h;
+    ctx.fillStyle = '#fff'; ctx.fillRect(0,0,w,h);
+    ctx.fillStyle = '#666'; ctx.font = '16px sans-serif';
+    ctx.fillText('No collage yet — click Generate', 14, 30);
+  }
+
+  generateBtn.addEventListener('click', async () => {
+    if (!images.length){ alert('Please choose at least one image.'); return; }
+    const cols = Math.max(1, Math.min(15, parseInt(colsEl.value)||4));
+    const gap = Math.max(0, parseInt(gapEl.value)||6);
+    const outW = Math.max(200, Math.min(4000, parseInt(outWEl.value)||1600));
+    const bg = bgEl.value || '#ffffff';
+
+    const total = images.length;
+    const rows = Math.ceil(total / cols);
+
+    const cellW = Math.floor((outW - gap*(cols-1)) / cols);
+    const avgAspect = images.reduce((s,i)=>s + (i.width / i.height),0) / images.length;
+    const cellH = Math.max(1, Math.floor(cellW / avgAspect));
+    const outH = rows * cellH + gap*(rows-1);
+
+    canvas.width = outW; canvas.height = outH;
+    ctx.fillStyle = bg; ctx.fillRect(0,0,canvas.width,canvas.height);
+
+    for (let idx=0; idx<rows*cols; idx++){
+      const r = Math.floor(idx / cols);
+      const c = idx % cols;
+      const x = c * (cellW + gap);
+      const y = r * (cellH + gap);
+
+      if (idx < images.length){
+        const img = images[idx];
+        const scale = Math.max(cellW / img.width, cellH / img.height);
+        const sw = Math.round(cellW / scale);
+        const sh = Math.round(cellH / scale);
+        const sx = Math.round((img.width - sw) / 2);
+        const sy = Math.round((img.height - sh) / 2);
+        try{
+          ctx.drawImage(img, sx, sy, sw, sh, x, y, cellW, cellH);
+        }catch(e){
+          ctx.drawImage(img, x, y, cellW, cellH);
+        }
+      }
+    }
+
+    const dataURL = canvas.toDataURL('image/jpeg', 0.95);
+    downloadBtn.style.display = 'inline-block';
+    resetBtn.style.display = 'inline-block';
+    downloadBtn.onclick = () => {
+      const a = document.createElement('a');
+      a.href = dataURL;
+      a.download = 'collage.jpg';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+    };
+  });
+
+  resetBtn.addEventListener('click', () => {
+    images = [];
+    thumbs.innerHTML = '';
+    filesEl.value = '';
+    downloadBtn.style.display = 'none';
+    resetBtn.style.display = 'none';
+    drawPlaceholder();
+  });
+
+  drawPlaceholder();
+</script>
+</body>
+</html>
