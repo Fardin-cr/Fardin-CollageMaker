@@ -1,157 +1,284 @@
-<!DOCTYPE html>
-<html>
+<!doctype html>
+<html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Custom Collage Generator</title>
-  <style>
-    body {
-      font-family: sans-serif;
-      background: #6a5acd;
-      color: white;
-      padding: 20px;
-    }
-    .controls {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 10px;
-      margin-bottom: 15px;
-    }
-    label {
-      display: block;
-      font-size: 14px;
-      margin-bottom: 3px;
-    }
-    input, select, button {
-      padding: 5px;
-      font-size: 14px;
-    }
-    canvas {
-      background: white;
-      display: block;
-      margin-top: 20px;
-      max-width: 100%;
-    }
-  </style>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Collage Generator</title>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  body {
+    margin: 0;
+    padding: 20px;
+    font-family: 'Poppins', sans-serif;
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+  }
+  .card {
+    width: 100%;
+    max-width: 980px;
+    background: rgba(255, 255, 255, 0.15);
+    backdrop-filter: blur(14px);
+    border-radius: 20px;
+    padding: 24px;
+    box-shadow: 0 8px 40px rgba(0,0,0,0.15);
+    color: white;
+  }
+  h1 { margin: 0 0 8px; font-size: 26px; font-weight: 600; }
+  p.lead { margin: 0 0 20px; color: rgba(255,255,255,0.85); }
+  .controls { display: flex; gap: 14px; flex-wrap: wrap; margin-bottom: 18px; }
+  label { font-size: 14px; font-weight: 500; display: block; margin-bottom: 4px; }
+  input[type=file], input[type=number], input[type=color], input[type=text] {
+    background: rgba(255,255,255,0.1);
+    border: 1px solid rgba(255,255,255,0.3);
+    padding: 8px;
+    border-radius: 8px;
+    color: white;
+    width: 100%;
+    box-sizing: border-box;
+  }
+  button {
+    background: linear-gradient(135deg, #00c6ff, #0072ff);
+    border: none;
+    color: white;
+    padding: 12px 18px;
+    border-radius: 10px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    width: 100%;
+  }
+  button:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0,0,0,0.25); }
+  .danger-btn { background: linear-gradient(135deg, #ff416c, #ff4b2b); }
+  #canvasWrap { display: flex; gap: 20px; align-items: flex-start; margin-top: 16px; flex-wrap: wrap; }
+  canvas {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 4px 18px rgba(0,0,0,0.2);
+    max-width: 100%;
+    height: auto;
+  }
+  .side { min-width: 200px; flex: 1; }
+  .small { font-size: 13px; color: rgba(255,255,255,0.8); }
+  .hint { font-size: 12px; color: rgba(255,255,255,0.6); }
+  .previewThumbs { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; overflow-x: auto; }
+  .thumb { width: 64px; height: 64px; object-fit: cover; border-radius: 10px; border: 2px solid rgba(255,255,255,0.3); transition: transform 0.25s ease; flex-shrink: 0; }
+  .thumb:hover { transform: scale(1.08); }
+  .footer { margin-top: 14px; font-size: 12px; color: rgba(255,255,255,0.7); }
+
+  @media (max-width: 768px) {
+    .controls { flex-direction: column; }
+    button { width: 100%; }
+    #canvasWrap { flex-direction: column; }
+    .side { order: 2; width: 100%; }
+    canvas { order: 1; }
+  }
+</style>
 </head>
 <body>
-
+<div class="card">
   <h1>Collage Generator</h1>
+  <p class="lead">Upload up to 15 images, choose layout settings, and create a stunning JPG collage.</p>
+
   <div class="controls">
-    <div>
+    <div style="flex:1;min-width:150px">
       <label>Choose images</label>
-      <input type="file" id="fileInput" multiple accept="image/*">
+      <input id="files" type="file" accept="image/*" multiple />
     </div>
-
-    <div>
+    <div style="flex:1;min-width:100px">
       <label>Columns</label>
-      <input type="number" id="columns" value="4" min="1" max="10">
+      <input id="cols" type="number" min="1" max="15" value="4" />
     </div>
-
-    <div>
-      <label>Filename (without .jpg)</label>
-      <input type="text" id="filename" value="collage">
+    <div style="flex:1;min-width:100px">
+      <label>Cell padding (px)</label>
+      <input id="gap" type="number" min="0" max="100" value="6" />
     </div>
-
-    <div style="align-self: flex-end;">
-      <button id="generateBtn">Generate</button>
-      <button id="downloadBtn" disabled>Download JPG</button>
+    <div style="flex:1;min-width:120px">
+      <label>Output width (px)</label>
+      <input id="outW" type="number" min="200" max="4000" value="1600" />
+    </div>
+    <div style="flex:1;min-width:100px">
+      <label>Background</label>
+      <input id="bg" type="color" value="#ffffff" />
+    </div>
+    <div style="flex:1;min-width:150px">
+      <label>File name (without .jpg)</label>
+      <input id="filename" type="text" placeholder="my_collage" value="collage" />
+    </div>
+    <div style="flex:1;min-width:120px;display:flex;align-items:flex-end">
+      <button id="generate">Generate</button>
     </div>
   </div>
 
-  <canvas id="canvas"></canvas>
+  <div id="canvasWrap">
+    <div class="side">
+      <div class="small">Preview thumbnails</div>
+      <div id="thumbs" class="previewThumbs"></div>
+
+      <div class="small" style="margin-top:12px">Options</div>
+      <div class="hint">Empty slots will show background color.</div>
+
+      <div style="margin-top:12px; display:flex; gap:8px; flex-wrap:wrap;">
+        <button id="download" style="display:none">Download JPG</button>
+        <button id="reset" class="danger-btn" style="display:none">Reset</button>
+      </div>
+    </div>
+
+    <div style="flex:2">
+      <canvas id="canvas"></canvas>
+    </div>
+  </div>
+
+  <div class="footer">
+    Output is a high-quality JPEG. After downloading, you can share it anywhere.
+  </div>
+</div>
 
 <script>
-const fileInput = document.getElementById('fileInput');
-const columnsInput = document.getElementById('columns');
-const filenameInput = document.getElementById('filename');
-const generateBtn = document.getElementById('generateBtn');
-const downloadBtn = document.getElementById('downloadBtn');
+const filesEl = document.getElementById('files');
+const thumbs = document.getElementById('thumbs');
 const canvas = document.getElementById('canvas');
 const ctx = canvas.getContext('2d');
+const colsEl = document.getElementById('cols');
+const gapEl = document.getElementById('gap');
+const outWEl = document.getElementById('outW');
+const bgEl = document.getElementById('bg');
+const filenameEl = document.getElementById('filename');
+const generateBtn = document.getElementById('generate');
+const downloadBtn = document.getElementById('download');
+const resetBtn = document.getElementById('reset');
 
 let images = [];
 let dataURL = '';
 
-fileInput.addEventListener('change', () => {
-  const files = Array.from(fileInput.files);
-  images = [];
-  let loaded = 0;
-  files.forEach(file => {
-    const reader = new FileReader();
-    reader.onload = e => {
-      const img = new Image();
-      img.onload = () => {
+// Auto-set output width for smaller devices
+if (window.innerWidth <= 480) { outWEl.value = 900; }
+else if (window.innerWidth <= 1024) { outWEl.value = 1400; }
+else { outWEl.value = 1600; }
+
+filesEl.addEventListener('change', async (e) => {
+    images = [];
+    thumbs.innerHTML = '';
+    const chosen = Array.from(e.target.files).slice(0, 25);
+    for (const f of chosen) {
+        const url = URL.createObjectURL(f);
+        const img = await loadImage(url);
         images.push(img);
-        loaded++;
-      };
-      img.src = e.target.result;
-    };
-    reader.readAsDataURL(file);
-  });
-});
-
-generateBtn.addEventListener('click', () => {
-  if (images.length === 0) {
-    alert('Please select some images first.');
-    return;
-  }
-
-  const cols = parseInt(columnsInput.value);
-  const gap = 2;
-  const cellH = 200; // fixed height for all rows
-  const rows = Math.ceil(images.length / cols);
-
-  // Calculate total canvas width
-  const fullRowWidth = cols * cellH + (cols - 1) * gap;
-  canvas.height = rows * cellH + (rows - 1) * gap;
-  canvas.width = fullRowWidth;
-
-  ctx.fillStyle = 'white';
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-  let idx = 0;
-  for (let r = 0; r < rows; r++) {
-    const isLastRow = (r === rows - 1);
-    let imagesInRow = isLastRow ? (images.length - idx) : cols;
-    let cellW = isLastRow && imagesInRow < cols 
-                  ? (canvas.width - (imagesInRow - 1) * gap) / imagesInRow
-                  : (canvas.width - (cols - 1) * gap) / cols;
-
-    for (let c = 0; c < imagesInRow; c++) {
-      if (idx >= images.length) break;
-      const img = images[idx];
-      const x = c * (cellW + gap);
-      const y = r * (cellH + gap);
-
-      // Scale to fit
-      const scale = Math.min(cellW / img.width, cellH / img.height);
-      const drawW = img.width * scale;
-      const drawH = img.height * scale;
-      const offsetX = x + (cellW - drawW) / 2;
-      const offsetY = y + (cellH - drawH) / 2;
-
-      ctx.drawImage(img, offsetX, offsetY, drawW, drawH);
-      idx++;
+        const imgEl = document.createElement('img');
+        imgEl.src = url;
+        imgEl.className = 'thumb';
+        thumbs.appendChild(imgEl);
     }
-  }
-
-  dataURL = canvas.toDataURL('image/jpeg', 0.95);
-  downloadBtn.disabled = false;
+    drawPlaceholder();
 });
 
-downloadBtn.addEventListener('click', () => {
-  let filename = filenameInput.value.trim() || 'collage';
-  if (!filename.toLowerCase().endsWith('.jpg')) {
-    filename += '.jpg';
-  }
-  const a = document.createElement('a');
-  a.href = dataURL;
-  a.download = filename;
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
+function loadImage(src){
+    return new Promise((res, rej) => {
+        const i = new Image();
+        i.onload = () => res(i);
+        i.onerror = rej;
+        i.src = src;
+    });
+}
+
+function drawPlaceholder(){
+    const w = 640, h = 360;
+    canvas.width = w; canvas.height = h;
+    ctx.fillStyle = '#fff'; ctx.fillRect(0,0,w,h);
+    ctx.fillStyle = '#666'; ctx.font = '16px sans-serif';
+    ctx.fillText('No collage yet — click Generate', 14, 32);
+}
+
+function generateCollage(){
+    if(!images.length) return alert('Choose images first!');
+    const outW = parseInt(outWEl.value);
+    const cols = parseInt(colsEl.value);
+    const gap = parseInt(gapEl.value);
+    const bg = bgEl.value;
+
+    // Calculate rows
+    const rowCount = Math.ceil(images.length / cols);
+    let rows = [];
+    for (let r=0; r<rowCount; r++){
+        const start = r*cols;
+        const end = start+cols;
+        rows.push(images.slice(start,end));
+    }
+
+    // Set canvas width
+    canvas.width = outW;
+
+    // Compute row heights based on max height ratio per row
+    const rowHeights = [];
+    const tempWidths = [];
+    const cellWidths = [];
+
+    // First, compute normal rows
+    for(let r=0; r<rows.length; r++){
+        let row = rows[r];
+        let isLastRow = r === rows.length-1;
+        let colCount = row.length;
+        let totalWidth = outW - gap*(colCount-1);
+        const wUnit = totalWidth / colCount;
+        cellWidths.push(Array(colCount).fill(wUnit));
+
+        // Compute height per image to maintain aspect ratio
+        let hMax = 0;
+        row.forEach((img,i)=>{
+            const h = img.height * (wUnit / img.width);
+            if(h>hMax) hMax = h;
+        });
+        rowHeights.push(hMax);
+    }
+
+    const totalHeight = rowHeights.reduce((a,b)=>a+b,0) + gap*(rowHeights.length-1);
+    canvas.height = totalHeight;
+
+    ctx.fillStyle = bg;
+    ctx.fillRect(0,0,canvas.width,canvas.height);
+
+    let y = 0;
+    rows.forEach((row,r)=>{
+        let isLastRow = r===rows.length-1;
+        const colCount = row.length;
+        const widths = cellWidths[r];
+        let x = 0;
+        row.forEach((img,i)=>{
+            let w = widths[i];
+            let h = img.height * (w / img.width);
+            let yOffset = (rowHeights[r]-h)/2; // center vertically in row
+            ctx.drawImage(img, x, y + yOffset, w, h);
+            x += w + gap;
+        });
+        y += rowHeights[r]+gap;
+    });
+
+    dataURL = canvas.toDataURL('image/jpeg', 0.95);
+    downloadBtn.style.display = 'inline-block';
+    resetBtn.style.display = 'inline-block';
+}
+
+generateBtn.addEventListener('click', generateCollage);
+downloadBtn.addEventListener('click', ()=>{
+    const a = document.createElement('a');
+    a.href = dataURL;
+    a.download = (filenameEl.value||'collage') + '.jpg';
+    a.click();
 });
+
+resetBtn.addEventListener('click', ()=>{
+    filesEl.value = '';
+    images = [];
+    thumbs.innerHTML = '';
+    downloadBtn.style.display = 'none';
+    resetBtn.style.display = 'none';
+    drawPlaceholder();
+});
+
+// Initial placeholder
+drawPlaceholder();
 </script>
-
 </body>
 </html>
